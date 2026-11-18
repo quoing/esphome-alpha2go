@@ -1,0 +1,97 @@
+esphome:
+  name: alpha2-go
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+
+external_components:
+  - source:
+      type: local
+      path: components
+
+esp32_ble:
+  # Pairing diagnostic for a new ESP32; passkey/comparison callbacks only log.
+  io_capability: keyboard_display
+
+esp32_ble_tracker:
+
+ble_client:
+  - mac_address: !secret pump_mac
+    id: heating_pump
+    on_passkey_request:
+      then:
+        - logger.log: "ALPHA2 requested passkey"
+    on_passkey_notification:
+      then:
+        - logger.log:
+            format: "ALPHA2 passkey notification: %06u"
+            args: ["static_cast<unsigned int>(passkey)"]
+    on_numeric_comparison_request:
+      then:
+        - logger.log:
+            format: "ALPHA2 numeric comparison: %06u"
+            args: ["static_cast<unsigned int>(passkey)"]
+    # If one of these callbacks fires, pairing needs an explicit reply to finish.
+
+sensor:
+  - platform: alpha2
+    id: alpha2_pump
+    ble_client_id: heating_pump
+    flow:
+      name: Pump Flow
+    head:
+      name: Pump Head
+    power:
+      name: Pump Power
+    current:
+      name: Pump Current
+    speed:
+      name: Pump Speed
+    voltage:
+      name: Pump Voltage
+    pump_enabled:
+      name: Pump Running
+      icon: mdi:pump
+    control_mode:
+      name: Pump Control Mode
+    cp_regulation:
+      name: Pump CP Regulation
+    pressure_setpoint:
+      name: Pump Pressure Setpoint
+    flow_setpoint:
+      name: Pump Flow Setpoint
+    curve_setpoint:
+      name: Pump Constant Curve
+    night_setback:
+      name: Pump Night Setback
+    air_detection:
+      name: Pump Continuous Air Detection
+    panel_lock:
+      name: Pump Panel Lock
+    minimum_flow_enabled:
+      name: Pump Minimum Flow Enabled
+    minimum_flow:
+      name: Pump Minimum Flow
+    maximum_flow_enabled:
+      name: Pump Maximum Flow Enabled
+    maximum_flow:
+      name: Pump Maximum Flow
+    # Set this to the measured maximum RPM for your pump model.
+    max_rpm: 5837
+    command_status:
+      name: Pump Command Status
+
+# The component reads operating state automatically on connection and while polling.
+# AUTOADAPT mode is selected with the observed mode write. Its additional
+# app-specific tuning block is unknown and is never modified by this component.
